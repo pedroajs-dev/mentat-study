@@ -25,6 +25,33 @@ strip_frontmatter() {
        !skip{print}' "$file"
 }
 
+# inline_skill: append skill body to $2, under the already-written ### heading.
+# - Validates the name so reads stay confined to SKILLS_DIR (no path traversal).
+# - Demotes skill headings two levels (## → ####) so they nest under the ###
+#   skill heading rather than becoming siblings of agent sections (Pattern 2).
+#   Heading lines inside fenced code blocks are left untouched.
+inline_skill() {
+  local skill_name="$1"
+  local out_file="$2"
+
+  if [[ ! "$skill_name" =~ ^[A-Za-z0-9._-]+$ ]] || [[ "$skill_name" == "." ]] || [[ "$skill_name" == ".." ]]; then
+    echo "build-skills WARNING: invalid skill name '$skill_name' — skipping" >&2
+    return
+  fi
+
+  local skill_file="$SKILLS_DIR/${skill_name}.md"
+  if [ ! -f "$skill_file" ]; then
+    echo "build-skills WARNING: skill file not found: $skill_file" >&2
+    return
+  fi
+
+  strip_frontmatter "$skill_file" | awk '
+    /^```/ { fence = !fence }
+    !fence && /^#+[[:space:]]/ { sub(/^/, "##") }
+    { print }
+  ' >> "$out_file"
+}
+
 # build_agent: assemble one agent file into $2
 # State machine:
 #   frontmatter       → copy until second --- then switch to normal
@@ -68,13 +95,7 @@ build_agent() {
         elif [[ "$line" =~ ^###[[:space:]](.+)$ ]]; then
           local skill_name="${BASH_REMATCH[1]}"
           echo "$line" >> "$out_file"
-          # Inline skill content (strip frontmatter)
-          local skill_file="$SKILLS_DIR/${skill_name}.md"
-          if [ -f "$skill_file" ]; then
-            strip_frontmatter "$skill_file" >> "$out_file"
-          else
-            echo "build-skills WARNING: skill file not found: $skill_file" >&2
-          fi
+          inline_skill "$skill_name" "$out_file"
           state="skill_placeholder"
         else
           echo "$line" >> "$out_file"
@@ -94,12 +115,7 @@ build_agent() {
           # Next skill in the same ## Skills block
           local skill_name="${BASH_REMATCH[1]}"
           echo "$line" >> "$out_file"
-          local skill_file="$SKILLS_DIR/${skill_name}.md"
-          if [ -f "$skill_file" ]; then
-            strip_frontmatter "$skill_file" >> "$out_file"
-          else
-            echo "build-skills WARNING: skill file not found: $skill_file" >&2
-          fi
+          inline_skill "$skill_name" "$out_file"
           # Stay in skill_placeholder
         fi
         # All other lines (placeholder content) are silently skipped

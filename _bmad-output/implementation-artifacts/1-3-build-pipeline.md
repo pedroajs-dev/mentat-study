@@ -4,7 +4,7 @@ baseline_commit: 35e58aeea5720254252626ac5a2330a1367e4b14
 
 # Story 1.3: Build Pipeline
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -150,18 +150,22 @@ claude-sonnet-4-6
 - tests/agents/structure.test.ts (created)
 - .github/workflows/ci.yml (modified — build + check steps added, --passWithNoTests removed)
 - _bmad-output/implementation-artifacts/1-3-build-pipeline.md (modified — story file)
-- _bmad-output/implementation-artifacts/sprint-status.yaml (modified — status → review)
+- _bmad-output/implementation-artifacts/sprint-status.yaml (modified — status → done)
+- .gitattributes (created — `eol=lf` normalization so the build's exact line matching is CRLF-safe)
+- .gitignore (modified — removed `compiled/` so the build artifact is tracked and the CI `--check` guard is real)
+- compiled/bmad-study-planner.md (created — committed build artifact)
 
 ### Review Findings (2026-06-15)
 
-- [x] [Review][Decision] `compiled/` is gitignored — CI `--check` step always passes trivially because it compares the output it just built against itself — resolved: flipped CI order so `--check` runs before `build`; guard is active when `compiled/` exists in workspace [`.github/workflows/ci.yml`]
-- [ ] [Review][Patch] `strip_frontmatter` awk drops any `---` line in skill body (horizontal rules), silently truncating compiled output [`scripts/build-skills.sh:21-24`]
-- [ ] [Review][Patch] `--check` only iterates files in TEMP_DIR — stale compiled files (a compiled file with no corresponding agent) are never detected [`scripts/build-skills.sh:99-114`]
-- [ ] [Review][Patch] Skill `## Purpose` / `## Instructions` headings survive into compiled output verbatim, violating Pattern 2 (no `##` inside a `###` skill block) [`skills/build-study-plan.md`, `scripts/build-skills.sh`]
-- [ ] [Review][Patch] `agents/` directory missing causes silent exit-0 with `agent_count=0` — script succeeds with nothing built [`scripts/build-skills.sh:76-77`]
-- [ ] [Review][Patch] `skill_name` extracted from `### heading` is not validated — path traversal (e.g. `../secret`) allows `strip_frontmatter` to read arbitrary files outside `SKILLS_DIR` [`scripts/build-skills.sh:50-53`]
-- [ ] [Review][Patch] `agent_id` extracted from frontmatter is not sanitised — whitespace or special chars break `out_file` path construction and may corrupt the output filename [`scripts/build-skills.sh:79-84`]
-- [ ] [Review][Patch] `readdirSync(AGENTS_DIR)` in the count test throws ENOENT if `agents/` is absent — `beforeAll` (build-skills.sh) exits 0 silently when no agents found, so the crash is not prevented [`tests/agents/structure.test.ts:23`]
+- [x] [Review][Decision] `compiled/` is gitignored — CI `--check` step always passes trivially because it compares the output it just built against itself — **resolved (2026-06-15):** `compiled/` is now a tracked artifact (removed from `.gitignore`); the CI `--check` step (which already runs before `build`) is now a real guard that fails a PR which edits `compiled/` directly [`.gitignore`, `.github/workflows/ci.yml`]
+- [x] [Review][Patch] `strip_frontmatter` awk drops any `---` line in skill body (horizontal rules), silently truncating compiled output — **resolved:** awk now only consumes the two frontmatter fences (`skip && /^---/`) and prints all later `---` lines [`scripts/build-skills.sh`]
+- [x] [Review][Patch] `--check` only iterates files in TEMP_DIR — stale compiled files (a compiled file with no corresponding agent) are never detected — **resolved:** added a second loop that flags any `compiled/bmad-study-*.md` with no rebuilt counterpart [`scripts/build-skills.sh`]
+- [x] [Review][Patch] Skill `## Purpose` / `## Instructions` headings survive into compiled output verbatim, violating Pattern 2 (no `##` inside a `###` skill block) — **resolved:** `inline_skill` demotes skill headings two levels (`## → ####`), skipping headings inside fenced code blocks [`scripts/build-skills.sh`]
+- [x] [Review][Patch] `agents/` directory missing causes silent exit-0 with `agent_count=0` — script succeeds with nothing built — **resolved:** script now errors and exits 1 when no agent files are found [`scripts/build-skills.sh`]
+- [x] [Review][Patch] `skill_name` extracted from `### heading` is not validated — path traversal (e.g. `../secret`) allows `strip_frontmatter` to read arbitrary files outside `SKILLS_DIR` — **resolved:** `inline_skill` rejects any name not matching `^[A-Za-z0-9._-]+$` (and `.`/`..`), confining reads to `SKILLS_DIR` [`scripts/build-skills.sh`]
+- [x] [Review][Patch] `agent_id` extracted from frontmatter is not sanitised — whitespace or special chars break `out_file` path construction and may corrupt the output filename — **resolved:** id extraction strips trailing CR and whitespace; CRLF tolerance added across the state machine plus `.gitattributes` (`eol=lf`) [`scripts/build-skills.sh`, `.gitattributes`]
+- [x] [Review][Patch] `readdirSync(AGENTS_DIR)` in the count test throws ENOENT if `agents/` is absent — **resolved:** `build-skills.sh` (run in `beforeAll`) now exits 1 with a clear "no agent files found" error before the test reads `agents/`, so a missing dir fails the build step rather than crashing mid-test [`scripts/build-skills.sh`, `tests/agents/structure.test.ts`]
+- [x] [Review][Patch] No test asserted skill body content was inlined, so CRLF/`---` failures could pass CI green — **resolved:** added a test asserting each referenced skill's body appears in the compiled output [`tests/agents/structure.test.ts`]
 - [x] [Review][Defer] `@types/node@^25.9.3` should be pinned to `^18` to match the project's minimum Node version [`package.json`] — deferred, non-breaking with skipLibCheck; revisit when Node floor changes
 - [x] [Review][Defer] `moduleResolution: "node"` is the legacy CommonJS resolver; prefer `"node16"` or `"bundler"` for modern TypeScript [`tsconfig.json`] — deferred, working with skipLibCheck; no current type errors
 - [x] [Review][Defer] `types: ["vitest/globals"]` in tsconfig is redundant with explicit `describe/it/expect` imports in the test file [`tsconfig.json`] — deferred, harmless redundancy
@@ -172,3 +176,4 @@ claude-sonnet-4-6
 
 - 2026-06-14: Story 1.3 implemented — build pipeline created. `scripts/build-skills.sh` assembles compiled agents by inlining skills; `--check` mode detects direct edits. 7 vitest tests validate compiled structure. CI updated to build before test. All ACs satisfied; `tsc --noEmit` and `vitest run` both exit 0.
 - 2026-06-15: Code review completed — 1 decision-needed, 7 patch, 5 deferred, 7 dismissed.
+- 2026-06-15: Review findings addressed — all 8 patch/decision findings resolved (CRLF-safe state machine + `.gitattributes`; `---` rules preserved; `inline_skill` adds path-traversal validation and Pattern 2 heading demotion; orphaned-`compiled/` detection; empty-`agents/` guard; `compiled/` now tracked so the CI `--check` guard is real; new test asserts skill bodies are inlined). 8/8 vitest tests pass; `tsc --noEmit` and `build-skills.sh --check` exit 0. Status → done.
