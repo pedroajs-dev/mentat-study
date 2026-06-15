@@ -17,11 +17,11 @@ collect_files() {
   for target in "${targets[@]}"; do
     if [ -f "$target" ] && [[ "$target" == *.md ]]; then
       # Skip anything under compiled/
-      if [[ "$target" != compiled/* ]] && [[ "$target" != */compiled/* ]]; then
+      if [[ "$target" != compiled/* ]] && [[ "$target" != ./compiled/* ]] && [[ "$target" != */compiled/* ]]; then
         echo "$target"
       fi
     elif [ -d "$target" ]; then
-      find "$target" -name "*.md" | grep -v '/compiled/' | sort
+      find "$target" -name "*.md" | grep -vE '(^|/)compiled/' | sort
     fi
   done
 }
@@ -64,6 +64,22 @@ while IFS= read -r file; do
     fi
 
   done < "$file"
+
+  # Agent version-gate check: any file with `type: agent` in its YAML frontmatter
+  # MUST contain the memory-protocol-version check. The version gate must never be
+  # omitted (Story 1.4 AC #3). Frontmatter = lines between the first two `---` fences.
+  # Print only frontmatter lines (between the first two `---` fences). No early
+  # `exit` — awk drains all of `tr`'s output so `tr` never gets SIGPIPE, which
+  # would otherwise abort the run under `set -o pipefail` on large files.
+  frontmatter=$(tr -d '\r' < "$file" | awk 'BEGIN{fences=0} /^---[[:space:]]*$/{fences++; next} fences==1{print}')
+  # Match `type: agent`, tolerating quotes (type: "agent") and a trailing inline
+  # comment (type: agent # primary). The word boundary stops `agentic` matching.
+  if echo "$frontmatter" | grep -Eq "^[[:space:]]*type:[[:space:]]*[\"']?agent[\"']?[[:space:]]*(#.*)?$"; then
+    if ! grep -q 'memory-protocol-version' "$file"; then
+      echo "lint-agnostic ERROR: ${file}: agent file is missing the required memory-protocol-version check"
+      found_error=1
+    fi
+  fi
 done < <(collect_files)
 
 if [ "$found_error" -eq 0 ]; then

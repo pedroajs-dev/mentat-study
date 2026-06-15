@@ -37,7 +37,7 @@
 # - Story 2.3 (quiz-master) may be split into 2.3a (skills) and 2.3b (agent) if too large
 
 generated: 2026-06-14
-last_updated: 2026-06-15  # 1-3-build-pipeline → done (review findings addressed)
+last_updated: 2026-06-15  # 1-5-onboarding-flow-template → in-progress (code review: 1 patch action item)
 project: bmad-study
 project_key: NOKEY
 tracking_system: file-system
@@ -49,9 +49,9 @@ development_status:
   1-1-repo-foundation: done
   1-2-memory-schema-contract-and-templates: done
   1-3-build-pipeline: done
-  1-4-memory-protocol-block: backlog
-  1-5-onboarding-flow-template: backlog
-  1-6-planner-agent-and-build-study-plan-skill: backlog
+  1-4-memory-protocol-block: done
+  1-5-onboarding-flow-template: in-progress
+  1-6-planner-agent-and-build-study-plan-skill: ready-for-dev
   epic-1-retrospective: optional
 
   # ─── Epic 2: Core Study Loop ────────────────────────────────────────────────

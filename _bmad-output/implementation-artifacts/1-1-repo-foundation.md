@@ -4,7 +4,7 @@ baseline_commit: NO_VCS
 
 # Story 1.1: Repo Foundation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -282,6 +282,14 @@ claude-sonnet-4-6
 - `package-lock.json`
 - `tsconfig.json`
 - `types.ts`
+
+### Review Findings
+
+- [x] [Review][Defer] `--passWithNoTests` flag permanently suppresses test-suite validation — deferred; remove flag when first real test file lands
+- [x] [Review][Patch] `^<s>$` and `^</s>$` platform token patterns miss inline occurrences [`scripts/lint-agnostic.sh:33`]
+- [x] [Review][Patch] `./compiled/` path bypass in compiled-exclusion filter [`scripts/lint-agnostic.sh:19-26`]
+- [x] [Review][Defer] `tsconfig.json` `include` only covers root `*.ts` and `src/**/*` [`tsconfig.json:7`] — deferred, pre-existing; no TS outside root yet, revisit in Story 1.3
+- [x] [Review][Defer] No `npm run lint` convenience script [`package.json`] — deferred, pre-existing; minor ergonomics, not a correctness issue
 
 ## Change Log
 
