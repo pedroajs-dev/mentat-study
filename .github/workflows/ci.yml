@@ -24,6 +24,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check compiled integrity
+        run: bash scripts/build-skills.sh --check
+
+      - name: Build skills
+        run: bash scripts/build-skills.sh
+
       - name: Lint - model-agnostic check
         run: bash scripts/lint-agnostic.sh agents/ skills/
 
@@ -31,4 +37,4 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Tests
-        run: npx vitest run --passWithNoTests
+        run: npx vitest run

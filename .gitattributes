@@ -1,0 +1,8 @@
+# Normalize line endings: text files are LF in the repo and in the working tree.
+# The build pipeline (scripts/build-skills.sh) parses agent/skill markdown with
+# exact line matches and would mis-assemble output on CRLF, so keep these LF.
+* text=auto eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.json text eol=lf
+*.yml text eol=lf

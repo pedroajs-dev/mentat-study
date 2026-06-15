@@ -6,10 +6,12 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "vitest run --passWithNoTests",
-    "typecheck": "npx tsc --noEmit"
+    "test": "vitest run",
+    "typecheck": "npx tsc --noEmit",
+    "prepublishOnly": "bash scripts/build-skills.sh"
   },
   "devDependencies": {
+    "@types/node": "^25.9.3",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
   }
